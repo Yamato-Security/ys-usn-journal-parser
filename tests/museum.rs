@@ -1,6 +1,6 @@
 //! Real Windows 11 and Windows Server 2012 R2 journals (slices of
-//! DFIRArtifactMuseum's, MIT; see `tests/fixtures/museum/README.md`), against
-//! every field dfir_ntfs reads from them.
+//! `DFIRArtifactMuseum`'s, MIT; see `tests/fixtures/museum/README.md`),
+//! against every field `dfir_ntfs` reads from them.
 
 use std::fs;
 use std::path::Path;
@@ -17,7 +17,7 @@ fn check(name: &str) {
     let data = fs::read(fixture(&format!("{name}.bin"))).unwrap();
     let expected = fs::read_to_string(fixture(&format!("{name}.dfir_ntfs.tsv"))).unwrap();
     let journal = parse(&data);
-    assert!(journal.problems.is_empty(), "{:?}", journal.problems);
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
     assert!(journal.ranges.is_empty());
     let rows: Vec<Vec<&str>> = expected
         .lines()
