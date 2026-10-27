@@ -124,6 +124,11 @@ impl Scanner {
 /// How many bytes at the start of `window` are whole zero words; all of
 /// them, when the journal ends with them.
 fn zero_run(window: &[u8], at_eof: bool) -> usize {
+    // Most steps start at a record: answer those from the first word instead
+    // of scanning a whole chunk first.
+    if window.iter().take(ALIGNMENT).any(|&byte| byte != 0) {
+        return 0;
+    }
     let mut zeros = 0;
     for chunk in window.chunks(ZERO_CHUNK) {
         // An OR over the chunk compiles to wide instructions; finding the
