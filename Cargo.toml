@@ -14,6 +14,13 @@ include = ["/src", "/README.md", "/LICENSE-APACHE", "/LICENSE-MIT"]
 [lib]
 name = "usn"
 
+[features]
+# PathBuilder::seed_from_mft, with Yamato Security's ys-mft-parser.
+mft = ["dep:mft"]
+
+[dependencies]
+mft = { git = "https://github.com/Yamato-Security/ys-mft-parser", rev = "9ccde49d1ac252e64fa44af86adde6695989531a", default-features = false, optional = true }
+
 [dev-dependencies]
 proptest = "1"
 

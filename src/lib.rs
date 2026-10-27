@@ -26,6 +26,8 @@
 
 mod bytes;
 mod flags;
+#[cfg(feature = "mft")]
+mod mft;
 mod paths;
 mod record;
 mod scan;
