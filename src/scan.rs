@@ -88,6 +88,9 @@ impl Scanner {
                 Here::Readable(Step::Found(length, Entry::Ranges(record)))
             }
             Fit::Incomplete if !at_eof => Here::NeedMore,
+            // A header the journal ends too soon for, with a whole record
+            // after it: the header is a false one, not a cut record.
+            Fit::Incomplete if record_ahead(window) => Here::Unreadable(ALIGNMENT),
             Fit::Incomplete => {
                 let problem = Problem {
                     offset: self.offset,
@@ -119,6 +122,14 @@ impl Scanner {
             kind: ProblemKind::Unreadable,
         })
     }
+}
+
+/// Whether a whole record starts at a later word of `window` (the journal's
+/// last bytes, shorter than the largest record).
+fn record_ahead(window: &[u8]) -> bool {
+    (ALIGNMENT..window.len())
+        .step_by(ALIGNMENT)
+        .any(|at| matches!(decode(&window[at..], 0), Fit::Complete(..)))
 }
 
 /// How many bytes at the start of `window` are whole zero words; all of

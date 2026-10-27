@@ -276,6 +276,34 @@ fn truncated_last_record() {
 }
 
 #[test]
+fn a_false_header_at_the_end_does_not_hide_the_records_after_it() {
+    let mut data = v2(0, "whole.txt");
+    // a word that reads as the start of a 4,000-byte V2 record
+    data.extend(4000_u32.to_le_bytes());
+    data.extend(2_u16.to_le_bytes());
+    data.extend(0_u16.to_le_bytes());
+    data.extend(v2(88, "after.txt"));
+    let journal = parse(&data);
+    let names: Vec<&str> = journal.records.iter().map(|r| r.name.as_str()).collect();
+    assert_eq!(names, ["whole.txt", "after.txt"]);
+    assert_eq!(
+        journal.problems,
+        [Problem {
+            offset: 80,
+            length: 8,
+            kind: ProblemKind::Unreadable
+        }]
+    );
+    assert_eq!(
+        gather(read(Trickle {
+            data: &data,
+            chunk: 7
+        })),
+        journal
+    );
+}
+
+#[test]
 fn garbage_tail() {
     let mut data = v2(0, "whole.txt");
     data.extend([0xFF; 13]);
