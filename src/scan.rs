@@ -11,6 +11,8 @@ use crate::{Entry, Problem, ProblemKind};
 /// Zeros are checked this many bytes at a time: a sparse `$J` can start
 /// with gigabytes of them.
 const ZERO_CHUNK: usize = 64 * 1024;
+/// Zeros are first looked at one by one, this many of them.
+const SHORT_RUN: usize = 256;
 
 /// What one step found.
 pub(crate) enum Step {
@@ -140,8 +142,14 @@ fn zero_run(window: &[u8], at_eof: bool) -> usize {
     if window.iter().take(ALIGNMENT).any(|&byte| byte != 0) {
         return 0;
     }
-    let mut zeros = 0;
-    for chunk in window.chunks(ZERO_CHUNK) {
+    // Short runs (page padding, the gaps in data being carved) end within a
+    // few words: find their end byte by byte rather than with a chunk scan.
+    let short = window.len().min(SHORT_RUN);
+    let mut zeros = match window[..short].iter().position(|&byte| byte != 0) {
+        Some(end) => return round_down(end, window.len(), at_eof),
+        None => short,
+    };
+    for chunk in window[short..].chunks(ZERO_CHUNK) {
         // An OR over the chunk compiles to wide instructions; finding the
         // first non-zero byte is only done once.
         if chunk.iter().fold(0, |any, &byte| any | byte) != 0 {
@@ -150,7 +158,12 @@ fn zero_run(window: &[u8], at_eof: bool) -> usize {
         }
         zeros += chunk.len();
     }
-    if at_eof && zeros == window.len() {
+    round_down(zeros, window.len(), at_eof)
+}
+
+/// `zeros` in whole words; all of them when they run to the journal's end.
+fn round_down(zeros: usize, window: usize, at_eof: bool) -> usize {
+    if at_eof && zeros == window {
         zeros
     } else {
         zeros - zeros % ALIGNMENT
@@ -169,5 +182,12 @@ mod tests {
         assert_eq!(zero_run(&[0; 13], false), 8);
         assert_eq!(zero_run(&[0; 13], true), 13);
         assert_eq!(zero_run(&[1, 0, 0, 0, 0, 0, 0, 0], true), 0);
+        let mut short = vec![0_u8; 300];
+        short[20] = 1;
+        assert_eq!(zero_run(&short, false), 16);
+        short[20] = 0;
+        assert_eq!(zero_run(&short, true), 300);
+        short[299] = 1;
+        assert_eq!(zero_run(&short, true), 296);
     }
 }
