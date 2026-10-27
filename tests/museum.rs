@@ -18,7 +18,7 @@ fn check(name: &str) {
     let expected = fs::read_to_string(fixture(&format!("{name}.dfir_ntfs.tsv"))).unwrap();
     let journal = parse(&data);
     assert_eq!(journal.problems, [] as [usn::Problem; 0]);
-    assert!(journal.ranges.is_empty());
+    assert_eq!(journal.ranges, []);
     let rows: Vec<Vec<&str>> = expected
         .lines()
         .filter(|l| !l.starts_with('#'))

@@ -438,7 +438,7 @@ proptest! {
         for pair in spans.windows(2) {
             prop_assert!(pair[0].0 + pair[0].1 <= pair[1].0);
         }
-        prop_assert!(spans.last().map_or(true, |(o, l)| o + l <= data.len() as u64));
+        prop_assert!(spans.last().is_none_or(|(o, l)| o + l <= data.len() as u64));
         prop_assert_eq!(gather(read(Trickle { data: &data, chunk })), parsed);
     }
 
