@@ -26,6 +26,7 @@
 
 mod bytes;
 mod flags;
+mod paths;
 mod record;
 mod scan;
 mod stream;
@@ -35,6 +36,7 @@ mod time;
 use core::fmt;
 
 pub use flags::{Attributes, Reasons, SourceInfo};
+pub use paths::{PathBuilder, Paths};
 pub use record::{Extent, RangeRecord, Record, Reference, Version};
 pub use stream::{read, Records};
 pub use time::Filetime;
