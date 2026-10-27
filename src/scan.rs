@@ -11,6 +11,8 @@ use crate::{Entry, Problem, ProblemKind};
 /// Zeros are checked this many bytes at a time: a sparse `$J` can start
 /// with gigabytes of them.
 const ZERO_CHUNK: usize = 64 * 1024;
+/// Zeros are first looked at one by one, this many of them.
+const SHORT_RUN: usize = 256;
 
 /// What one step found.
 pub(crate) enum Step {
@@ -40,11 +42,21 @@ enum Here {
 pub(crate) struct Scanner {
     /// Offset in the journal of the next window's start.
     offset: u64,
+    /// Carving: accept only records laid out the way NTFS writes them.
+    strict: bool,
     /// Start of the run of unreadable bytes being passed, if any.
     unreadable_from: Option<u64>,
 }
 
 impl Scanner {
+    /// A scanner for data that is not a journal (see [`crate::carve`]).
+    pub(crate) fn carving() -> Self {
+        Self {
+            strict: true,
+            ..Self::default()
+        }
+    }
+
     /// Take one step through `window`, which starts where the last step
     /// stopped; `at_eof` when the journal ends with it.
     pub(crate) fn step(&mut self, window: &[u8], at_eof: bool) -> Step {
@@ -80,7 +92,7 @@ impl Scanner {
                 Here::NeedMore
             };
         }
-        match decode(window, self.offset) {
+        match decode(window, self.offset, self.strict) {
             Fit::Complete(length, Decoded::Change(record)) => {
                 Here::Readable(Step::Found(length, Entry::Record(record)))
             }
@@ -88,6 +100,9 @@ impl Scanner {
                 Here::Readable(Step::Found(length, Entry::Ranges(record)))
             }
             Fit::Incomplete if !at_eof => Here::NeedMore,
+            // A header the journal ends too soon for, with a whole record
+            // after it: the header is a false one, not a cut record.
+            Fit::Incomplete if record_ahead(window, self.strict) => Here::Unreadable(ALIGNMENT),
             Fit::Incomplete => {
                 let problem = Problem {
                     offset: self.offset,
@@ -121,11 +136,30 @@ impl Scanner {
     }
 }
 
+/// Whether a whole record starts at a later word of `window` (the journal's
+/// last bytes, shorter than the largest record).
+fn record_ahead(window: &[u8], strict: bool) -> bool {
+    (ALIGNMENT..window.len())
+        .step_by(ALIGNMENT)
+        .any(|at| matches!(decode(&window[at..], 0, strict), Fit::Complete(..)))
+}
+
 /// How many bytes at the start of `window` are whole zero words; all of
 /// them, when the journal ends with them.
 fn zero_run(window: &[u8], at_eof: bool) -> usize {
-    let mut zeros = 0;
-    for chunk in window.chunks(ZERO_CHUNK) {
+    // Most steps start at a record: answer those from the first word instead
+    // of scanning a whole chunk first.
+    if window.iter().take(ALIGNMENT).any(|&byte| byte != 0) {
+        return 0;
+    }
+    // Short runs (page padding, the gaps in data being carved) end within a
+    // few words: find their end byte by byte rather than with a chunk scan.
+    let short = window.len().min(SHORT_RUN);
+    let mut zeros = match window[..short].iter().position(|&byte| byte != 0) {
+        Some(end) => return round_down(end, window.len(), at_eof),
+        None => short,
+    };
+    for chunk in window[short..].chunks(ZERO_CHUNK) {
         // An OR over the chunk compiles to wide instructions; finding the
         // first non-zero byte is only done once.
         if chunk.iter().fold(0, |any, &byte| any | byte) != 0 {
@@ -134,7 +168,12 @@ fn zero_run(window: &[u8], at_eof: bool) -> usize {
         }
         zeros += chunk.len();
     }
-    if at_eof && zeros == window.len() {
+    round_down(zeros, window.len(), at_eof)
+}
+
+/// `zeros` in whole words; all of them when they run to the journal's end.
+fn round_down(zeros: usize, window: usize, at_eof: bool) -> usize {
+    if at_eof && zeros == window {
         zeros
     } else {
         zeros - zeros % ALIGNMENT
@@ -153,5 +192,12 @@ mod tests {
         assert_eq!(zero_run(&[0; 13], false), 8);
         assert_eq!(zero_run(&[0; 13], true), 13);
         assert_eq!(zero_run(&[1, 0, 0, 0, 0, 0, 0, 0], true), 0);
+        let mut short = vec![0_u8; 300];
+        short[20] = 1;
+        assert_eq!(zero_run(&short, false), 16);
+        short[20] = 0;
+        assert_eq!(zero_run(&short, true), 300);
+        short[299] = 1;
+        assert_eq!(zero_run(&short, true), 296);
     }
 }

@@ -6,7 +6,7 @@
 use std::io::{self, Read};
 
 use proptest::prelude::*;
-use usn::{parse, read, Entry, Journal, Problem, ProblemKind, Reasons, Reference};
+use usn::{carve, parse, read, Entry, Journal, Problem, ProblemKind, Reasons, Reference};
 
 const FILE: u64 = 0x0003_0000_0000_0040; // entry 64, sequence 3
 const PARENT: u64 = 0x0005_0000_0000_0005; // the root directory
@@ -167,7 +167,7 @@ fn v4_ranges_follow_their_v3_record() {
         (ranges.extents[1].offset, ranges.extents[1].length),
         (1 << 30, 65_536)
     );
-    assert!(journal.problems.is_empty());
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
 }
 
 #[test]
@@ -204,7 +204,7 @@ fn sparse_start_and_page_padding() {
         found,
         [(12_288, 12_288, "one.txt"), (16_384, 16_384, "two.txt")]
     );
-    assert!(journal.problems.is_empty());
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
 }
 
 #[test]
@@ -276,6 +276,95 @@ fn truncated_last_record() {
 }
 
 #[test]
+fn a_false_header_at_the_end_does_not_hide_the_records_after_it() {
+    let mut data = v2(0, "whole.txt");
+    // a word that reads as the start of a 4,000-byte V2 record
+    data.extend(4000_u32.to_le_bytes());
+    data.extend(2_u16.to_le_bytes());
+    data.extend(0_u16.to_le_bytes());
+    data.extend(v2(88, "after.txt"));
+    let journal = parse(&data);
+    let names: Vec<&str> = journal.records.iter().map(|r| r.name.as_str()).collect();
+    assert_eq!(names, ["whole.txt", "after.txt"]);
+    assert_eq!(
+        journal.problems,
+        [Problem {
+            offset: 80,
+            length: 8,
+            kind: ProblemKind::Unreadable
+        }]
+    );
+    assert_eq!(
+        gather(read(Trickle {
+            data: &data,
+            chunk: 7
+        })),
+        journal
+    );
+}
+
+/// Carve from `data`, streamed in `chunk`-byte reads: names and offsets.
+fn carved(data: &[u8], chunk: usize) -> Vec<(String, u64)> {
+    carve(Trickle { data, chunk })
+        .map(|r| r.map(|r| (r.name, r.offset)).unwrap())
+        .collect()
+}
+
+#[test]
+fn carving_finds_records_in_other_data_at_their_offsets() {
+    // other data, then records whose USNs are not their offsets here
+    let mut data: Vec<u8> = (0..4000_u32)
+        .flat_map(|i| i.wrapping_mul(2_654_435_761).to_le_bytes())
+        .collect();
+    data.extend(v2(4096, "one.txt"));
+    data.extend([0xA5; 24]);
+    data.extend(change(3, 4096 + 80, &utf16("two.txt"), 0x8000_0100, 0));
+    data.extend(v4(4096 + 176, &[(0, 4096)]));
+    data.extend([0; 40]);
+    let want = [
+        ("one.txt".to_string(), 16_000),
+        ("two.txt".to_string(), 16_104),
+    ];
+    assert_eq!(carved(&data, 1 << 20), want);
+    assert_eq!(carved(&data, 13), want, "the same in any chunks");
+}
+
+#[test]
+fn carving_rejects_what_ntfs_does_not_write() {
+    let mut bad_time = v2(0, "time.txt");
+    bad_time[32..40].copy_from_slice(&1_u64.to_le_bytes()); // 1601
+    let mut bad_parent = v2(0, "parent.txt");
+    bad_parent[16..24].copy_from_slice(&0x0001_0000_0000_0003_u64.to_le_bytes()); // $Volume
+    let cases = [
+        (
+            "a gap before the name",
+            change(2, 0, &utf16("gap.txt"), 0x100, 8),
+        ),
+        ("no reason", change(2, 0, &utf16("none.txt"), 0, 0)),
+        (
+            "an unknown reason",
+            change(2, 0, &utf16("bits.txt"), 0x0200_0100, 0),
+        ),
+        ("a USN off the word", v2(4, "usn.txt")),
+        (
+            "a record crossing a journal page",
+            v2(4096 - 40, "page.txt"),
+        ),
+        ("a time in 1601", bad_time),
+        ("a parent that is not a directory", bad_parent),
+        ("a slash in the name", v2(0, "a/b")),
+    ];
+    for (what, record) in cases {
+        assert!(
+            !parse(&record).records.is_empty(),
+            "{what}: read as a journal"
+        );
+        assert!(carved(&record, 1 << 20).is_empty(), "{what}: carved");
+    }
+    assert_eq!(carved(&v2(0, "ok.txt"), 1 << 20).len(), 1);
+}
+
+#[test]
 fn garbage_tail() {
     let mut data = v2(0, "whole.txt");
     data.extend([0xFF; 13]);
@@ -297,7 +386,7 @@ fn streams_through_a_large_sparse_start() {
     }
     let journal = gather(read(Zeros(zeros).chain(&tail[..])));
     assert_eq!(journal.records.len(), 200);
-    assert!(journal.problems.is_empty());
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
     assert!(journal.records.iter().all(|r| r.offset == r.usn));
     assert_eq!(journal.records[199].name, "f00199.tmp");
 }
@@ -349,7 +438,7 @@ proptest! {
         for pair in spans.windows(2) {
             prop_assert!(pair[0].0 + pair[0].1 <= pair[1].0);
         }
-        prop_assert!(spans.last().map_or(true, |(o, l)| o + l <= data.len() as u64));
+        prop_assert!(spans.last().is_none_or(|(o, l)| o + l <= data.len() as u64));
         prop_assert_eq!(gather(read(Trickle { data: &data, chunk })), parsed);
     }
 
@@ -366,5 +455,16 @@ proptest! {
             data[at % len] = byte;
         }
         prop_assert_eq!(gather(read(Trickle { data: &data, chunk: 7 })), parse(&data));
+    }
+
+    /// Carving a damaged journal in any chunk size carves what one read does.
+    #[test]
+    fn carved_in_chunks_as_whole(flips in proptest::collection::vec((any::<usize>(), any::<u8>()), 0..30), chunk in 1_usize..300) {
+        let mut data = mixed();
+        for (at, byte) in flips {
+            let len = data.len();
+            data[at % len] = byte;
+        }
+        prop_assert_eq!(carved(&data, chunk), carved(&data, 1 << 20));
     }
 }

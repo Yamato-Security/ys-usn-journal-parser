@@ -24,16 +24,24 @@
 //! stream, holding at most 1 MiB of it. A record names its file and
 //! directory by MFT reference: joining with the volume's MFT gives paths.
 
+mod bytes;
 mod flags;
+#[cfg(feature = "mft")]
+mod mft;
+mod paths;
 mod record;
 mod scan;
 mod stream;
+mod text;
+mod time;
 
 use core::fmt;
 
 pub use flags::{Attributes, Reasons, SourceInfo};
+pub use paths::{PathBuilder, Paths};
 pub use record::{Extent, RangeRecord, Record, Reference, Version};
-pub use stream::{read, Records};
+pub use stream::{carve, read, Carved, Records};
+pub use time::Filetime;
 
 use scan::{Scanner, Step};
 

@@ -4,7 +4,7 @@ use std::io::{self, Read};
 
 use crate::record::MAX_RECORD;
 use crate::scan::{Scanner, Step};
-use crate::Entry;
+use crate::{Entry, Record};
 
 /// How much of the stream is held at once. Larger than any record, so a
 /// record always fits.
@@ -24,14 +24,45 @@ const _: () = assert!(BUFFER > MAX_RECORD);
 /// # Ok::<(), std::io::Error>(())
 /// ```
 pub fn read<R: Read>(reader: R) -> Records<R> {
-    Records {
-        reader,
-        buffer: vec![0; BUFFER].into_boxed_slice(),
-        start: 0,
-        end: 0,
-        at_eof: false,
-        failed: false,
-        scanner: Scanner::default(),
+    Records::new(reader, Scanner::default())
+}
+
+/// Carve V2 and V3 records out of data that is not a journal: a disk or
+/// volume image, unallocated clusters, a pagefile, a volume shadow copy, a
+/// memory image. Every 8-byte word is tried, holding at most 1 MiB at a
+/// time, and only records laid out the way NTFS writes them are returned:
+/// the name right after the header and the record ending with it, a USN
+/// that keeps the record inside one 4 KiB journal page, a time from 1980 to
+/// 2100, known reason, source and attribute bits, a valid name and a parent
+/// that can be a directory. Their offsets are offsets in `reader`.
+///
+/// ```no_run
+/// let image = std::fs::File::open("disk.raw")?;
+/// for record in usn::carve(std::io::BufReader::new(image)) {
+///     let record = record?;
+///     println!("{} {} {} at {}", record.time, record.reasons, record.name, record.offset);
+/// }
+/// # Ok::<(), std::io::Error>(())
+/// ```
+pub fn carve<R: Read>(reader: R) -> Carved<R> {
+    Carved(Records::new(reader, Scanner::carving()))
+}
+
+/// The records carved from a stream; see [`carve`].
+#[derive(Debug)]
+pub struct Carved<R>(Records<R>);
+
+impl<R: Read> Iterator for Carved<R> {
+    type Item = io::Result<Record>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.0.next()? {
+                Ok(Entry::Record(record)) => return Some(Ok(record)),
+                Ok(Entry::Ranges(_) | Entry::Problem(_)) => {}
+                Err(error) => return Some(Err(error)),
+            }
+        }
     }
 }
 
@@ -51,6 +82,18 @@ pub struct Records<R> {
 }
 
 impl<R: Read> Records<R> {
+    fn new(reader: R, scanner: Scanner) -> Self {
+        Self {
+            reader,
+            buffer: vec![0; BUFFER].into_boxed_slice(),
+            start: 0,
+            end: 0,
+            at_eof: false,
+            failed: false,
+            scanner,
+        }
+    }
+
     /// Move what's left to the front of the buffer and read after it.
     fn fill(&mut self) -> io::Result<()> {
         self.buffer.copy_within(self.start..self.end, 0);
