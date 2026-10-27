@@ -167,7 +167,7 @@ fn v4_ranges_follow_their_v3_record() {
         (ranges.extents[1].offset, ranges.extents[1].length),
         (1 << 30, 65_536)
     );
-    assert!(journal.problems.is_empty());
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
 }
 
 #[test]
@@ -204,7 +204,7 @@ fn sparse_start_and_page_padding() {
         found,
         [(12_288, 12_288, "one.txt"), (16_384, 16_384, "two.txt")]
     );
-    assert!(journal.problems.is_empty());
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
 }
 
 #[test]
@@ -331,28 +331,29 @@ fn carving_finds_records_in_other_data_at_their_offsets() {
 
 #[test]
 fn carving_rejects_what_ntfs_does_not_write() {
-    let mut cases: Vec<(&str, Vec<u8>)> = Vec::new();
-    cases.push((
-        "a gap before the name",
-        change(2, 0, &utf16("gap.txt"), 0x100, 8),
-    ));
-    cases.push(("no reason", change(2, 0, &utf16("none.txt"), 0, 0)));
-    cases.push((
-        "an unknown reason",
-        change(2, 0, &utf16("bits.txt"), 0x0200_0100, 0),
-    ));
-    cases.push(("a USN off the word", v2(4, "usn.txt")));
-    cases.push((
-        "a record crossing a journal page",
-        v2(4096 - 40, "page.txt"),
-    ));
     let mut bad_time = v2(0, "time.txt");
     bad_time[32..40].copy_from_slice(&1_u64.to_le_bytes()); // 1601
-    cases.push(("a time in 1601", bad_time));
     let mut bad_parent = v2(0, "parent.txt");
     bad_parent[16..24].copy_from_slice(&0x0001_0000_0000_0003_u64.to_le_bytes()); // $Volume
-    cases.push(("a parent that is not a directory", bad_parent));
-    cases.push(("a slash in the name", v2(0, "a/b")));
+    let cases = [
+        (
+            "a gap before the name",
+            change(2, 0, &utf16("gap.txt"), 0x100, 8),
+        ),
+        ("no reason", change(2, 0, &utf16("none.txt"), 0, 0)),
+        (
+            "an unknown reason",
+            change(2, 0, &utf16("bits.txt"), 0x0200_0100, 0),
+        ),
+        ("a USN off the word", v2(4, "usn.txt")),
+        (
+            "a record crossing a journal page",
+            v2(4096 - 40, "page.txt"),
+        ),
+        ("a time in 1601", bad_time),
+        ("a parent that is not a directory", bad_parent),
+        ("a slash in the name", v2(0, "a/b")),
+    ];
     for (what, record) in cases {
         assert!(
             !parse(&record).records.is_empty(),
@@ -385,7 +386,7 @@ fn streams_through_a_large_sparse_start() {
     }
     let journal = gather(read(Zeros(zeros).chain(&tail[..])));
     assert_eq!(journal.records.len(), 200);
-    assert!(journal.problems.is_empty());
+    assert_eq!(journal.problems, [] as [usn::Problem; 0]);
     assert!(journal.records.iter().all(|r| r.offset == r.usn));
     assert_eq!(journal.records[199].name, "f00199.tmp");
 }

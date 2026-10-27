@@ -5,7 +5,7 @@
 //! the directory's path *now*, which is wrong for every record written
 //! before that directory was renamed, moved or deleted. The journal itself
 //! holds those changes, so it can be rewound (the technique of
-//! usnjrnl-forensic / ntfs-core's `rewind`, and CyberCX's "USN journal
+//! `RustyUsn`, usnjrnl-forensic / ntfs-core's `rewind`, and `CyberCX`'s "USN journal
 //! rewind"):
 //!
 //! 1. [`PathBuilder::observe`] every record, in journal order. With the MFT

@@ -322,7 +322,7 @@ fn plausible_layout(window: &[u8], length: usize, version: Version) -> bool {
 }
 
 /// Whether a decoded V2 or V3 record is laid out and filled in the way NTFS
-/// writes them. Every one of the 1,035,437 records of the DFIRArtifactMuseum
+/// writes them. Every one of the 1,035,437 records of the `DFIRArtifactMuseum`
 /// journals passes; random data and other file system metadata almost never
 /// do, so carving from disk images, unallocated space or a pagefile finds
 /// records, not noise.

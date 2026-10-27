@@ -21,7 +21,7 @@ struct Base {
 /// A name and its parent, ranked by namespace.
 struct Name {
     rank: u8,
-    name: String,
+    text: String,
     parent: Reference,
 }
 
@@ -31,7 +31,7 @@ fn reference(entry: u64, sequence: u16) -> Reference {
 
 /// The long name first: Win32 (or Win32 and DOS), then POSIX, then the 8.3
 /// DOS name.
-fn rank(namespace: &FileNamespace) -> u8 {
+fn rank(namespace: FileNamespace) -> u8 {
     match namespace {
         FileNamespace::Win32 | FileNamespace::Win32AndDos => 3,
         FileNamespace::POSIX => 2,
@@ -76,7 +76,7 @@ impl PathBuilder {
                 let Some(file_name) = attribute.data.as_file_name() else {
                     continue;
                 };
-                let rank = rank(&file_name.namespace);
+                let rank = rank(file_name.namespace);
                 if names.get(&base).is_some_and(|known| known.rank >= rank) {
                     continue;
                 }
@@ -84,7 +84,7 @@ impl PathBuilder {
                     base,
                     Name {
                         rank,
-                        name: file_name.name.to_utf8_string(),
+                        text: file_name.name.to_utf8_string(),
                         parent: reference(file_name.parent.entry, file_name.parent.sequence),
                     },
                 );
@@ -102,7 +102,7 @@ impl PathBuilder {
             } else {
                 continue;
             };
-            self.seed(reference(number, sequence), &name.name, name.parent);
+            self.seed(reference(number, sequence), &name.text, name.parent);
             seeded += 1;
         }
         seeded
