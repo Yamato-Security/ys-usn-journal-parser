@@ -2,9 +2,9 @@
 
 use core::fmt;
 
-use common::bytes::Reader;
-use common::text::utf16le;
-use common::time::Ts;
+use crate::bytes::Reader;
+use crate::text::utf16le;
+use crate::time::Filetime;
 
 use crate::{Attributes, Reasons, SourceInfo};
 
@@ -106,7 +106,7 @@ pub struct Record {
     /// counts it, which is the byte offset in a whole `$J`.
     pub usn: u64,
     /// When it was written (FILETIME, UTC).
-    pub time: Ts,
+    pub time: Filetime,
     /// The file changed.
     pub file: Reference,
     /// The directory it was in. Joining with the MFT gives its path.
@@ -234,7 +234,7 @@ fn change(data: &[u8], offset: u64, version: Version, wide: bool) -> Option<Reco
     let file = reference(&mut r, wide)?;
     let parent = reference(&mut r, wide)?;
     let usn = r.u64_le().ok()?;
-    let time = Ts::from_filetime(r.u64_le().ok()?);
+    let time = Filetime::new(r.u64_le().ok()?);
     let reasons = Reasons::from_bits(r.u32_le().ok()?);
     let source_info = SourceInfo::from_bits(r.u32_le().ok()?);
     let security_id = r.u32_le().ok()?;
