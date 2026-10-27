@@ -42,11 +42,21 @@ enum Here {
 pub(crate) struct Scanner {
     /// Offset in the journal of the next window's start.
     offset: u64,
+    /// Carving: accept only records laid out the way NTFS writes them.
+    strict: bool,
     /// Start of the run of unreadable bytes being passed, if any.
     unreadable_from: Option<u64>,
 }
 
 impl Scanner {
+    /// A scanner for data that is not a journal (see [`crate::carve`]).
+    pub(crate) fn carving() -> Self {
+        Self {
+            strict: true,
+            ..Self::default()
+        }
+    }
+
     /// Take one step through `window`, which starts where the last step
     /// stopped; `at_eof` when the journal ends with it.
     pub(crate) fn step(&mut self, window: &[u8], at_eof: bool) -> Step {
@@ -82,7 +92,7 @@ impl Scanner {
                 Here::NeedMore
             };
         }
-        match decode(window, self.offset) {
+        match decode(window, self.offset, self.strict) {
             Fit::Complete(length, Decoded::Change(record)) => {
                 Here::Readable(Step::Found(length, Entry::Record(record)))
             }
@@ -92,7 +102,7 @@ impl Scanner {
             Fit::Incomplete if !at_eof => Here::NeedMore,
             // A header the journal ends too soon for, with a whole record
             // after it: the header is a false one, not a cut record.
-            Fit::Incomplete if record_ahead(window) => Here::Unreadable(ALIGNMENT),
+            Fit::Incomplete if record_ahead(window, self.strict) => Here::Unreadable(ALIGNMENT),
             Fit::Incomplete => {
                 let problem = Problem {
                     offset: self.offset,
@@ -128,10 +138,10 @@ impl Scanner {
 
 /// Whether a whole record starts at a later word of `window` (the journal's
 /// last bytes, shorter than the largest record).
-fn record_ahead(window: &[u8]) -> bool {
+fn record_ahead(window: &[u8], strict: bool) -> bool {
     (ALIGNMENT..window.len())
         .step_by(ALIGNMENT)
-        .any(|at| matches!(decode(&window[at..], 0), Fit::Complete(..)))
+        .any(|at| matches!(decode(&window[at..], 0, strict), Fit::Complete(..)))
 }
 
 /// How many bytes at the start of `window` are whole zero words; all of

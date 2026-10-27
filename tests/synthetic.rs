@@ -6,7 +6,7 @@
 use std::io::{self, Read};
 
 use proptest::prelude::*;
-use usn::{parse, read, Entry, Journal, Problem, ProblemKind, Reasons, Reference};
+use usn::{carve, parse, read, Entry, Journal, Problem, ProblemKind, Reasons, Reference};
 
 const FILE: u64 = 0x0003_0000_0000_0040; // entry 64, sequence 3
 const PARENT: u64 = 0x0005_0000_0000_0005; // the root directory
@@ -303,6 +303,66 @@ fn a_false_header_at_the_end_does_not_hide_the_records_after_it() {
     );
 }
 
+/// Carve from `data`, streamed in `chunk`-byte reads: names and offsets.
+fn carved(data: &[u8], chunk: usize) -> Vec<(String, u64)> {
+    carve(Trickle { data, chunk })
+        .map(|r| r.map(|r| (r.name, r.offset)).unwrap())
+        .collect()
+}
+
+#[test]
+fn carving_finds_records_in_other_data_at_their_offsets() {
+    // other data, then records whose USNs are not their offsets here
+    let mut data: Vec<u8> = (0..4000_u32)
+        .flat_map(|i| i.wrapping_mul(2_654_435_761).to_le_bytes())
+        .collect();
+    data.extend(v2(4096, "one.txt"));
+    data.extend([0xA5; 24]);
+    data.extend(change(3, 4096 + 80, &utf16("two.txt"), 0x8000_0100, 0));
+    data.extend(v4(4096 + 176, &[(0, 4096)]));
+    data.extend([0; 40]);
+    let want = [
+        ("one.txt".to_string(), 16_000),
+        ("two.txt".to_string(), 16_104),
+    ];
+    assert_eq!(carved(&data, 1 << 20), want);
+    assert_eq!(carved(&data, 13), want, "the same in any chunks");
+}
+
+#[test]
+fn carving_rejects_what_ntfs_does_not_write() {
+    let mut cases: Vec<(&str, Vec<u8>)> = Vec::new();
+    cases.push((
+        "a gap before the name",
+        change(2, 0, &utf16("gap.txt"), 0x100, 8),
+    ));
+    cases.push(("no reason", change(2, 0, &utf16("none.txt"), 0, 0)));
+    cases.push((
+        "an unknown reason",
+        change(2, 0, &utf16("bits.txt"), 0x0200_0100, 0),
+    ));
+    cases.push(("a USN off the word", v2(4, "usn.txt")));
+    cases.push((
+        "a record crossing a journal page",
+        v2(4096 - 40, "page.txt"),
+    ));
+    let mut bad_time = v2(0, "time.txt");
+    bad_time[32..40].copy_from_slice(&1_u64.to_le_bytes()); // 1601
+    cases.push(("a time in 1601", bad_time));
+    let mut bad_parent = v2(0, "parent.txt");
+    bad_parent[16..24].copy_from_slice(&0x0001_0000_0000_0003_u64.to_le_bytes()); // $Volume
+    cases.push(("a parent that is not a directory", bad_parent));
+    cases.push(("a slash in the name", v2(0, "a/b")));
+    for (what, record) in cases {
+        assert!(
+            !parse(&record).records.is_empty(),
+            "{what}: read as a journal"
+        );
+        assert!(carved(&record, 1 << 20).is_empty(), "{what}: carved");
+    }
+    assert_eq!(carved(&v2(0, "ok.txt"), 1 << 20).len(), 1);
+}
+
 #[test]
 fn garbage_tail() {
     let mut data = v2(0, "whole.txt");
@@ -394,5 +454,16 @@ proptest! {
             data[at % len] = byte;
         }
         prop_assert_eq!(gather(read(Trickle { data: &data, chunk: 7 })), parse(&data));
+    }
+
+    /// Carving a damaged journal in any chunk size carves what one read does.
+    #[test]
+    fn carved_in_chunks_as_whole(flips in proptest::collection::vec((any::<usize>(), any::<u8>()), 0..30), chunk in 1_usize..300) {
+        let mut data = mixed();
+        for (at, byte) in flips {
+            let len = data.len();
+            data[at % len] = byte;
+        }
+        prop_assert_eq!(carved(&data, chunk), carved(&data, 1 << 20));
     }
 }

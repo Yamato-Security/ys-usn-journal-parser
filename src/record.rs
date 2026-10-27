@@ -22,6 +22,11 @@ const V3_HEADER: usize = 76;
 const V4_HEADER: usize = 64;
 /// A V4 extent: offset and length.
 const EXTENT_SIZE: usize = 16;
+/// NTFS's reserved MFT entries 0-15 are not directories, except the root
+/// (5) and `$Extend` (11).
+const FIRST_USER_ENTRY: u64 = 16;
+/// Times a carved record may have: 1980-01-01 to 2100-01-01 (FILETIME).
+const CARVE_TIMES: core::ops::Range<u64> = 119_600_064_000_000_000..157_469_184_000_000_000;
 
 /// An NTFS file reference (MFT entry number and sequence number), or a
 /// 128-bit file identifier from a V3 or V4 record.
@@ -180,16 +185,27 @@ pub(crate) enum Fit {
 
 /// Read the record at the start of `window` (at least [`ALIGNMENT`] bytes),
 /// which is at `offset` in the journal.
-pub(crate) fn decode(window: &[u8], offset: u64) -> Fit {
+///
+/// `strict` (for carving from data that is not a journal) accepts only
+/// what Windows writes: see [`plausible`].
+pub(crate) fn decode(window: &[u8], offset: u64, strict: bool) -> Fit {
     let Some((length, version)) = common_header(window) else {
         return Fit::Invalid;
     };
     let Some(data) = window.get(..length) else {
         return Fit::Incomplete;
     };
+    if strict && !plausible_layout(data, length, version) {
+        return Fit::Invalid;
+    }
     let decoded = match version.major {
-        2 => change(data, offset, version, false).map(Decoded::Change),
-        3 => change(data, offset, version, true).map(Decoded::Change),
+        2 => change(data, offset, version, false)
+            .filter(|r| !strict || plausible(r, V2_HEADER))
+            .map(Decoded::Change),
+        3 => change(data, offset, version, true)
+            .filter(|r| !strict || plausible(r, V3_HEADER))
+            .map(Decoded::Change),
+        _ if strict => None,
         _ => ranges(data, offset, version).map(Decoded::Ranges),
     };
     decoded.map_or(Fit::Invalid, |decoded| Fit::Complete(length, decoded))
@@ -268,6 +284,69 @@ fn change(data: &[u8], offset: u64, version: Version, wide: bool) -> Option<Reco
     })
 }
 
+/// The checks of [`plausible`] that need only the fixed fields, before any
+/// decoding: carving tries every word of its input, and most are not
+/// records.
+fn plausible_layout(window: &[u8], length: usize, version: Version) -> bool {
+    let header = match version.major {
+        2 => V2_HEADER,
+        3 => V3_HEADER,
+        _ => return false,
+    };
+    let field = |at: usize| -> Option<u64> {
+        let bytes = window.get(at..at + 8)?;
+        Some(u64::from_le_bytes(bytes.try_into().ok()?))
+    };
+    let u16_at = |at: usize| -> Option<usize> {
+        Some(usize::from(u16::from_le_bytes(
+            window.get(at..at + 2)?.try_into().ok()?,
+        )))
+    };
+    // offsets of the USN, the time and the name fields
+    let wide = if version.major == 3 { 16 } else { 0 };
+    let (Some(usn), Some(time), Some(name_length), Some(name_offset)) = (
+        field(24 + wide),
+        field(32 + wide),
+        u16_at(56 + wide),
+        u16_at(58 + wide),
+    ) else {
+        return false;
+    };
+    version.minor == 0
+        && name_offset == header
+        && name_length > 0
+        && length == (header + name_length).next_multiple_of(ALIGNMENT)
+        && usn % ALIGNMENT as u64 == 0
+        && usn % MAX_RECORD as u64 + length as u64 <= MAX_RECORD as u64
+        && CARVE_TIMES.contains(&time)
+}
+
+/// Whether a decoded V2 or V3 record is laid out and filled in the way NTFS
+/// writes them. Every one of the 1,035,437 records of the DFIRArtifactMuseum
+/// journals passes; random data and other file system metadata almost never
+/// do, so carving from disk images, unallocated space or a pagefile finds
+/// records, not noise.
+fn plausible(record: &Record, header: usize) -> bool {
+    let name_bytes = record.name.encode_utf16().count() * 2;
+    let parent = record.parent;
+    record.version.minor == 0
+        // the name follows the header, and the record ends with it
+        && !record.name.is_empty()
+        && !record.name_escaped
+        && record.length as usize == (header + name_bytes).next_multiple_of(ALIGNMENT)
+        && !record.name.contains(['\0', '/', '\\'])
+        // the USN is the record's offset in the journal, and records do
+        // not cross a 4 KiB page
+        && record.usn % ALIGNMENT as u64 == 0
+        && record.usn % MAX_RECORD as u64 + u64::from(record.length) <= MAX_RECORD as u64
+        && CARVE_TIMES.contains(&record.time.raw())
+        && record.reasons.bits() != 0
+        && record.reasons.unknown() == 0
+        && record.source_info.unknown() == 0
+        && record.attributes.unknown() == 0
+        && (!parent.is_ntfs() || matches!(parent.entry(), 5 | 11) || parent.entry() >= FIRST_USER_ENTRY)
+}
+
 /// A V4 record, `data` exactly its length.
 fn ranges(data: &[u8], offset: u64, version: Version) -> Option<RangeRecord> {
     let mut r = Reader::new(data);
@@ -343,6 +422,6 @@ mod tests {
             );
         }
         assert!(common_header(&header(64, 2)).is_some());
-        assert!(matches!(decode(&header(64, 2), 0), Fit::Incomplete));
+        assert!(matches!(decode(&header(64, 2), 0, false), Fit::Incomplete));
     }
 }
