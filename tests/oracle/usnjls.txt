@@ -1,0 +1,121 @@
+Version: 2.0 Length: 112
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 0
+Time: 2015-11-30 21:15:27.203125000 (UTC)
+Reason: FILE_CREATE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: Nieuw - Tekstdocument.txt
+
+Version: 2.0 Length: 112
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 112
+Time: 2015-11-30 21:15:27.218750000 (UTC)
+Reason: FILE_CREATE CLOSE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: Nieuw - Tekstdocument.txt
+
+Version: 2.0 Length: 112
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 224
+Time: 2015-11-30 21:15:35.890625000 (UTC)
+Reason: RENAME_OLD_NAME 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: Nieuw - Tekstdocument.txt
+
+Version: 2.0 Length: 80
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 336
+Time: 2015-11-30 21:15:35.890625000 (UTC)
+Reason: RENAME_NEW_NAME 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: first.txt
+
+Version: 2.0 Length: 80
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 416
+Time: 2015-11-30 21:15:35.890625000 (UTC)
+Reason: RENAME_NEW_NAME CLOSE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: first.txt
+
+Version: 2.0 Length: 80
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 496
+Time: 2015-11-30 21:15:36.625000000 (UTC)
+Reason: OBJECT_ID_CHANGE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: first.txt
+
+Version: 2.0 Length: 80
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 576
+Time: 2015-11-30 21:15:36.625000000 (UTC)
+Reason: OBJECT_ID_CHANGE CLOSE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: first.txt
+
+Version: 2.0 Length: 64
+Reference Number: 5-5
+Parent Reference Number: 5-5
+Update Sequence Number: 656
+Time: 2015-11-30 21:15:36.796875000 (UTC)
+Reason: OBJECT_ID_CHANGE 
+Source Info: 
+Security Id: 0
+Attributes: HIDDEN SYSTEM DIRECTORY 
+Name: .
+
+Version: 2.0 Length: 80
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 720
+Time: 2015-11-30 21:15:39.593750000 (UTC)
+Reason: DATA_EXTEND 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: first.txt
+
+Version: 2.0 Length: 80
+Reference Number: 30-1
+Parent Reference Number: 5-5
+Update Sequence Number: 800
+Time: 2015-11-30 21:15:39.593750000 (UTC)
+Reason: DATA_EXTEND CLOSE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: first.txt
+
+Version: 2.0 Length: 104
+Reference Number: 31-1
+Parent Reference Number: 5-5
+Update Sequence Number: 880
+Time: 2015-11-30 21:15:47.968750000 (UTC)
+Reason: FILE_CREATE 
+Source Info: 
+Security Id: 260
+Attributes: ARCHIVE 
+Name: Kopie van first.txt
+
