@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- The `mft` feature uses ys-mft-parser 0.9.0 (which includes upstream mft 0.8.0).
+- `PathBuilder::seed_from_mft` picks each directory's name with ys-mft-parser's
+  `get_extension_entries` and `find_best_name_attribute_in` instead of its own pass over every
+  record.
+
+### Fixed
+- `seed_from_mft` took a name from every record whose base reference pointed at a directory,
+  whatever the reference's sequence number, so a reused directory could get the long name its
+  record's previous owner left in an extension record. Only the extension records that belong to
+  the current version count now.
+
 ## 0.2.0 (ys-usn-journal-parser)
 
 First version of Yamato Security's fork, based on sootmark-usn 0.1.0 (Sootmark/usn 605f3a0).
