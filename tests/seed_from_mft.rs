@@ -8,6 +8,7 @@ use usn::{PathBuilder, Reference};
 
 const RECORD_SIZE: usize = 1024;
 const ROOT: (u64, u16) = (5, 5);
+const POSIX: u8 = 0;
 const WIN32: u8 = 1;
 const DOS: u8 = 2;
 
@@ -150,10 +151,32 @@ fn directories_are_named_by_their_own_records() {
         &[file_name("old long name", WIN32, ROOT)],
     );
 
+    // 25: a POSIX name in the base record, a Win32 name in its extension
+    // record 26: the Win32 name is preferred wherever it is.
+    record(
+        &mut mft,
+        25,
+        1,
+        3,
+        (0, 0),
+        &[
+            file_name("posix-name", POSIX, ROOT),
+            attribute_list(&[(25, 1), (26, 1)]),
+        ],
+    );
+    record(
+        &mut mft,
+        26,
+        1,
+        1,
+        (25, 1),
+        &[file_name("Win32 Name", WIN32, ROOT)],
+    );
+
     let mut builder = PathBuilder::new();
     let seeded = builder.seed_from_mft(&mut MftParser::from_buffer(mft).unwrap());
     let paths = builder.finish();
-    assert_eq!(seeded, 4, "the root, 20, 22 and 23");
+    assert_eq!(seeded, 5, "the root, 20, 22, 23 and 25");
     assert_eq!(paths.resolve(reference((20, 1))), ".\\amd64_component");
     assert_eq!(
         paths.resolve(reference((22, 1))),
@@ -161,4 +184,5 @@ fn directories_are_named_by_their_own_records() {
     );
     // not the previous owner's name
     assert_eq!(paths.resolve(reference((23, 2))), ".\\NEWDIR~1");
+    assert_eq!(paths.resolve(reference((25, 1))), ".\\Win32 Name");
 }

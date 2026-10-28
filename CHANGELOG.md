@@ -4,9 +4,9 @@
 
 ### Changed
 - The `mft` feature uses ys-mft-parser 0.9.0 (which includes upstream mft 0.8.0).
-- `PathBuilder::seed_from_mft` picks each directory's name with ys-mft-parser's
-  `get_extension_entries` and `find_best_name_attribute_in` instead of its own pass over every
-  record.
+- `PathBuilder::seed_from_mft` finds each directory's extension records with ys-mft-parser's
+  `get_extension_entries` instead of its own pass over every record, and ranks the names across the
+  base record and those extension records as before (Win32 over POSIX over DOS).
 
 ### Fixed
 - `seed_from_mft` took a name from every record whose base reference pointed at a directory,
