@@ -1,11 +1,12 @@
 [package]
-name = "sootmark-usn"
-version = "0.2.0"
+name = "ys-usn-journal-parser"
+version = "1.0.0"
+authors = ["Florian Amette", "Zach Mathis (@yamatosecurity)"]
 # Yamato Security's fork of the upstream `sootmark-usn` crate: not published under the upstream name.
 publish = false
-edition = "2021"
+edition = "2024"
 # The `mft` feature needs 1.90 (ys-mft-parser).
-rust-version = "1.85"
+rust-version = "1.99"
 description = "NTFS USN change journal ($UsnJrnl:$J): every V2, V3 and V4 record, read straight through sparse zeros and damage, with reasons, references, names, paths rewound to each record's time, and carving."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Yamato-Security/ys-usn-journal-parser"
@@ -22,7 +23,7 @@ name = "usn"
 mft = ["dep:mft"]
 
 [dependencies]
-mft = { git = "https://github.com/Yamato-Security/ys-mft-parser", rev = "9398de862b6ba716c1a4a25d9566c77273063ce8", version = "0.9", default-features = false, optional = true }
+mft = { package = "ys-mft-parser", git = "https://github.com/Yamato-Security/ys-mft-parser", rev = "9d5ebdc5f6d6898577887f03d92fe010bc18a6a2", version = "1.0", default-features = false, optional = true }
 
 [dev-dependencies]
 proptest = "1"

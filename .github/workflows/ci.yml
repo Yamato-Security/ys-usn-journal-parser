@@ -39,15 +39,15 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
   msrv:
-    name: MSRV (1.85, default features)
+    name: MSRV (1.99)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          toolchain: "1.85"
+          toolchain: "1.99"
       - name: Test
-        run: cargo test --locked
+        run: cargo test --all-features --locked
 
   wasm:
     name: Build for wasm32

@@ -6,7 +6,7 @@
 use std::io::{self, Read};
 
 use proptest::prelude::*;
-use usn::{carve, parse, read, Entry, Journal, Problem, ProblemKind, Reasons, Reference};
+use usn::{Entry, Journal, Problem, ProblemKind, Reasons, Reference, carve, parse, read};
 
 const FILE: u64 = 0x0003_0000_0000_0040; // entry 64, sequence 3
 const PARENT: u64 = 0x0005_0000_0000_0005; // the root directory

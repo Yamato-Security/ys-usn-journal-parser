@@ -21,7 +21,9 @@ pub(crate) fn utf16le(bytes: &[u8]) -> Decoded {
     let mut escaped = false;
     for item in char::decode_utf16(
         bytes[..whole_units]
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|c| u16::from_le_bytes([c[0], c[1]])),
     ) {
         match item {

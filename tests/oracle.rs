@@ -11,7 +11,7 @@
 use std::fs;
 use std::path::Path;
 
-use usn::{parse, read, Entry, Record};
+use usn::{Entry, Record, parse, read};
 
 fn manifest(path: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(path)

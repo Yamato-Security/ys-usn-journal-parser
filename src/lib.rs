@@ -40,7 +40,7 @@ use core::fmt;
 pub use flags::{Attributes, Reasons, SourceInfo};
 pub use paths::{PathBuilder, Paths};
 pub use record::{Extent, RangeRecord, Record, Reference, Version};
-pub use stream::{carve, read, Carved, Records};
+pub use stream::{Carved, Records, carve, read};
 pub use time::Filetime;
 
 use scan::{Scanner, Step};

@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 (Unreleased)
 
 ### Changed
+- The crate is named after its repository, `ys-usn-journal-parser` (its library is still `usn`:
+  depend on it as `usn = { package = "ys-usn-journal-parser", … }`), version 1.0.0, by Florian
+  Amette and Zach Mathis (@yamatosecurity), on Rust's 2024 edition, and requires Rust 1.99. The
+  `mft` feature uses ys-mft-parser 1.0.0 (renamed from `mft`). (@YamatoSecurity)
 - The `mft` feature uses ys-mft-parser 0.9.0 (which includes upstream mft 0.8.0).
 - `PathBuilder::seed_from_mft` finds each directory's extension records with ys-mft-parser's
   `get_extension_entries` instead of its own pass over every record, and ranks the names across the

@@ -5,7 +5,7 @@
 //! stopped, so a whole file in memory and a stream read in chunks take the
 //! same path.
 
-use crate::record::{decode, Decoded, Fit, ALIGNMENT};
+use crate::record::{ALIGNMENT, Decoded, Fit, decode};
 use crate::{Entry, Problem, ProblemKind};
 
 /// Zeros are checked this many bytes at a time: a sparse `$J` can start

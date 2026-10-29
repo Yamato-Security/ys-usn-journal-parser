@@ -53,14 +53,15 @@ for entry in usn::read(std::io::BufReader::new(std::fs::File::open("$J")?)) {
 }
 ```
 
-Use it from Cargo by commit (the crate keeps the name `sootmark-usn` and its library name `usn`;
-it is not published, and its versions from 0.2.0 are the fork's own):
+Use it from Cargo by commit (the crate is `ys-usn-journal-parser`, named after the repository, and
+its library keeps the name `usn`; it is not published, and its versions are the fork's own: 1.0.0
+since the rename):
 
 ```toml
-usn = { package = "sootmark-usn", git = "https://github.com/Yamato-Security/ys-usn-journal-parser", rev = "<commit>", features = ["mft"] }
+usn = { package = "ys-usn-journal-parser", git = "https://github.com/Yamato-Security/ys-usn-journal-parser", rev = "<commit>", features = ["mft"] }
 ```
 
-MSRV: 1.85 (1.90 with the `mft` feature). See [CHANGELOG.md](CHANGELOG.md).
+MSRV: 1.99 (edition 2024). See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
