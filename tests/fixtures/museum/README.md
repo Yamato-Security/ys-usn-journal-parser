@@ -11,5 +11,5 @@
 
 `*.dfir_ntfs.tsv` lists every record as [dfir_ntfs](https://github.com/msuhanov/dfir_ntfs)
 (Maxim Suhanov, `USN.ChangeJournalParser`, commit ec3ae08) reads it. On the six whole journals
-these slices come from, dfir_ntfs and Eric Zimmerman's MFTECmd agree on every V2/V3 record
+these slices come from, dfir_ntfs and a second, independent parser agree on every V2/V3 record
 (1,035,437 records: name, file and parent references, USN and time to 100 ns).

@@ -3,10 +3,10 @@
 
 use std::io::{Read, Seek};
 
-use mft::attribute::x30::FileNamespace;
-use mft::attribute::MftAttributeType;
-use mft::entry::{EntryFlags, MftEntry};
 use mft::MftParser;
+use mft::attribute::MftAttributeType;
+use mft::attribute::x30::FileNamespace;
+use mft::entry::{EntryFlags, MftEntry};
 
 use crate::{PathBuilder, Reference};
 

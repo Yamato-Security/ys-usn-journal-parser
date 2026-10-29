@@ -261,27 +261,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
-name = "mft"
-version = "0.9.0"
-source = "git+https://github.com/Yamato-Security/ys-mft-parser?rev=9398de862b6ba716c1a4a25d9566c77273063ce8#9398de862b6ba716c1a4a25d9566c77273063ce8"
-dependencies = [
- "bitflags 2.13.2",
- "byteorder",
- "csv",
- "itertools",
- "jiff",
- "log",
- "lru",
- "num-derive 0.5.1",
- "num-traits",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "utf16-simd",
- "winstructs",
-]
-
-[[package]]
 name = "num-derive"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -516,14 +495,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sootmark-usn"
-version = "0.2.0"
-dependencies = [
- "mft",
- "proptest",
-]
-
-[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -682,6 +653,35 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "ys-mft-parser"
+version = "1.0.0"
+source = "git+https://github.com/Yamato-Security/ys-mft-parser?rev=211a0d8443aacc744ce544bedf71624f3c52ad7c#211a0d8443aacc744ce544bedf71624f3c52ad7c"
+dependencies = [
+ "bitflags 2.13.2",
+ "byteorder",
+ "csv",
+ "itertools",
+ "jiff",
+ "log",
+ "lru",
+ "num-derive 0.5.1",
+ "num-traits",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "utf16-simd",
+ "winstructs",
+]
+
+[[package]]
+name = "ys-usn-journal-parser"
+version = "1.0.0"
+dependencies = [
+ "proptest",
+ "ys-mft-parser",
+]
 
 [[package]]
 name = "zerocopy"

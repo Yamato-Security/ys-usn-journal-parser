@@ -225,7 +225,8 @@ fn common_header(window: &[u8]) -> Option<(usize, Version)> {
         4 => V4_HEADER,
         _ => return None,
     };
-    (length % ALIGNMENT == 0 && (fixed..=MAX_RECORD).contains(&length)).then_some((length, version))
+    (length.is_multiple_of(ALIGNMENT) && (fixed..=MAX_RECORD).contains(&length))
+        .then_some((length, version))
 }
 
 /// Whether `length` is `used` padded to the alignment.
@@ -337,7 +338,7 @@ fn plausible(record: &Record, header: usize) -> bool {
         && !record.name.contains(['\0', '/', '\\'])
         // the USN is the record's offset in the journal, and records do
         // not cross a 4 KiB page
-        && record.usn % ALIGNMENT as u64 == 0
+        && record.usn.is_multiple_of(ALIGNMENT as u64)
         && record.usn % MAX_RECORD as u64 + u64::from(record.length) <= MAX_RECORD as u64
         && CARVE_TIMES.contains(&record.time.raw())
         && record.reasons.bits() != 0
