@@ -23,7 +23,8 @@ name = "usn"
 mft = ["dep:mft"]
 
 [dependencies]
-mft = { package = "ys-mft-parser", git = "https://github.com/Yamato-Security/ys-mft-parser", rev = "211a0d8443aacc744ce544bedf71624f3c52ad7c", version = "1.0", default-features = false, optional = true }
+# The latest ys-mft-parser on its main branch (Cargo.lock records the commit used).
+mft = { package = "ys-mft-parser", git = "https://github.com/Yamato-Security/ys-mft-parser", version = "1.0", default-features = false, optional = true }
 
 [dev-dependencies]
 proptest = "1"

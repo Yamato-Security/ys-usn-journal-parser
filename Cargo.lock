@@ -657,7 +657,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 [[package]]
 name = "ys-mft-parser"
 version = "1.0.0"
-source = "git+https://github.com/Yamato-Security/ys-mft-parser?rev=211a0d8443aacc744ce544bedf71624f3c52ad7c#211a0d8443aacc744ce544bedf71624f3c52ad7c"
+source = "git+https://github.com/Yamato-Security/ys-mft-parser#c4796f95256eccc29a6c76c3bda071c2a8f560a7"
 dependencies = [
  "bitflags 2.13.2",
  "byteorder",
