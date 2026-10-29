@@ -23,7 +23,7 @@ name = "usn"
 mft = ["dep:mft"]
 
 [dependencies]
-mft = { package = "ys-mft-parser", git = "https://github.com/Yamato-Security/ys-mft-parser", rev = "9d5ebdc5f6d6898577887f03d92fe010bc18a6a2", version = "1.0", default-features = false, optional = true }
+mft = { package = "ys-mft-parser", git = "https://github.com/Yamato-Security/ys-mft-parser", rev = "211a0d8443aacc744ce544bedf71624f3c52ad7c", version = "1.0", default-features = false, optional = true }
 
 [dev-dependencies]
 proptest = "1"
