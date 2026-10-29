@@ -6,8 +6,8 @@ The upstream history and the MIT OR Apache-2.0 license are kept; everything belo
 upstream's README.
 
 sootmark-usn was chosen after running the Rust USN parsers on six real journals (DFIRArtifactMuseum,
-1,035,444 records) against dfir_ntfs and MFTECmd, which agree with each other on every record, and on
-damaged copies:
+1,035,444 records) against dfir_ntfs and a second, independent parser, which agree with each other on
+every record, and on damaged copies:
 
 | Crate | V2 / V3 / V4 | Matches the oracles | Damaged journals (4,400) | Notes |
 | --- | --- | --- | --- | --- |
@@ -29,9 +29,9 @@ What the fork adds and fixes:
 | `carve(reader)`: V2/V3 records from disk images, unallocated space, pagefiles, with strict layout checks | idea of RustyUsn and ntfs-core's carver; written afresh |
 | Tests on real Windows 11 and Server 2012 R2 journals, carving, paths | fork |
 
-Paths: on the six DFIRArtifactMuseum journals seeded from their `$MFT`, the rewound paths equal
-MFTECmd's `ParentPath` for all 1,030,833 records MFTECmd resolves, and resolve 4,321 of the records
-MFTECmd gives up on (`PathUnknown`), from directories the journal created and deleted.
+Paths: on the six DFIRArtifactMuseum journals seeded from their `$MFT`, the rewound paths equal the
+parent paths an independent parser gives for all 1,030,833 records it resolves, and resolve 4,321 of
+the records it leaves unresolved, from directories the journal created and deleted.
 
 Carving: every one of the 1,035,437 V2/V3 records of those journals passes the checks and is
 found; carving their `$MFT` files (880 MB of other NTFS metadata) and random data finds nothing.
