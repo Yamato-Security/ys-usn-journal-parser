@@ -1,8 +1,9 @@
 # ys-usn-journal-parser
 
 Yamato Security's maintained fork of [sootmark-usn](https://github.com/Sootmark/usn), the NTFS USN
-change journal (`$Extend\$UsnJrnl:$J`) parser used by [Juntei](https://github.com/Yamato-Security/juntei).
-The upstream history and the MIT OR Apache-2.0 license are kept; everything below the line is
+change journal (`$Extend\$UsnJrnl:$J`) parser used by
+[Juntei](https://github.com/Yamato-Security/juntei). The upstream history is kept, and its code
+stays under its MIT OR Apache-2.0 license (see [Licence](#licence)); everything below the line is
 upstream's README.
 
 sootmark-usn was chosen after running the Rust USN parsers on six real journals (DFIRArtifactMuseum,
@@ -104,4 +105,10 @@ Not here: paths. A record names its file and directory by MFT reference; joining
 
 ## Licence
 
-MIT or Apache-2.0, at your option. The test journal is plaso's, under the Apache licence 2.0.
+ys-usn-journal-parser is copyright Shirofune Security Co., Ltd. and released under the [Reciprocal
+Public License 1.5](LICENSE) (RPL-1.5); its source code was published under MIT OR Apache-2.0 before
+version 1.0.0. It is changed from [sootmark-usn](https://github.com/Sootmark/usn) (copyright Cyber
+Experts), whose code stays under the MIT License or the Apache License 2.0 (`LICENSE-MIT`,
+`LICENSE-APACHE`): each Rust file changed from it says so in its header. Its byte, text and time
+helpers are changed from [sootmark-common](https://github.com/Sootmark/common) (copyright Cyber
+Experts), under the same licenses. The test journal is plaso's, under the Apache licence 2.0.

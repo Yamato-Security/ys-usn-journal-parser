@@ -8,7 +8,7 @@ edition = "2024"
 # The `mft` feature needs 1.90 (ys-mft-parser).
 rust-version = "1.99"
 description = "NTFS USN change journal ($UsnJrnl:$J): every V2, V3 and V4 record, read straight through sparse zeros and damage, with reasons, references, names, paths rewound to each record's time, and carving."
-license = "MIT OR Apache-2.0"
+license = "RPL-1.5 AND (MIT OR Apache-2.0)"
 repository = "https://github.com/Yamato-Security/ys-usn-journal-parser"
 homepage = "https://github.com/Yamato-Security/ys-usn-journal-parser"
 keywords = ["forensics", "dfir", "incident-response", "ntfs", "usn"]
